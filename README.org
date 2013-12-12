@@ -1,4 +1,60 @@
-shpec
-=====
+* Description
 
-Rspec-like testing for POSIX sh scripts
+*shpec* provides rspec-like testing for POSIX sh scripts.
+
+Example:
+#+BEGIN_SRC sh
+#!/bin/sh
+describe 'my-script'
+  it 'outputs hostname'
+    # sugar for: expr "$(my-script)" = "$(hostname)"
+    # but with diagnostic output in case of failure
+    expect "$(my-script)" to = "$(hostname)"
+  end
+
+  it 'performs arithmetic'
+    expect "$(my-script 1 + 1)" to = 2
+  end
+end
+#+END_SRC
+
+When run:
+#+BEGIN_EXAMPLE
+ $ shpec -f my-script-shpec.sh
+my-script
+  outputs hostname
+  performs arithmetic
+   Comparison failed (using =):
+   Expected:
+    2
+   Got:
+    1
+FAIL my-script-shpec.sh
+ $ echo $?
+1
+#+END_EXAMPLE
+
+* Installation
+
+#+BEGIN_SRC sh
+ # Install in /usr/local
+ $ make test
+ $ sudo make install
+#+END_SRC
+
+The default installation location is =/usr/local=.  If you want to
+install =shpec= somewhere else, set =PREFIX=.
+
+#+BEGIN_SRC sh
+ # Install somewhere else
+ $ PREFIX=/tmp make install
+#+END_SRC
+
+* Author
+
+Dario Hamidi <dario.hamidi@gmail.com>, 2013, [[https://github.com/dhamidi/shtuc][Github]]
+
+* License
+
+All code is licensed under the [[http://www.gnu.org/licenses/gpl.html][GNU GPL]]. Documentation is licensed under
+the [[http://www.gnu.org/copyleft/fdl.html][GNU FDL]].
