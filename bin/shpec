@@ -1,0 +1,201 @@
+#!/bin/sh
+
+set -a
+
+SHPEC_LEVEL=0
+SHPEC_CURRENT_BLOCK=''
+SHPEC_INDENT_STRING=' '
+SHPEC_EXIT_CODE=0
+
+color_green() {
+    printf "32\n"
+}
+
+color_red() {
+    printf "31\n"
+}
+
+color_yellow() {
+    printf "33\n"
+}
+
+color_blue() {
+    printf "34\n"
+}
+
+color_magenta() {
+    printf "35\n"
+}
+
+color_cyan() {
+    printf "36\n"
+}
+
+color_cyan() {
+    printf "37\n"
+}
+
+color() {
+    printf "\033[%s;1m%s\033[0m" $(color_$1) "$2"
+
+}
+
+shpec_quote() {
+    printf "%s\n" "$1" |
+    sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/'/"
+}
+
+shpec_blocks() {
+    printf "%s\n" "$SHPEC_CURRENT_BLOCK" | tr : "\n"
+}
+
+shpec_current_block() {
+    shpec_blocks | head -1
+}
+
+shpec_push_block() {
+    SHPEC_CURRENT_BLOCK=$1:$SHPEC_CURRENT_BLOCK
+    SHPEC_LEVEL=$((SHPEC_LEVEL + 1))
+}
+
+shpec_pop_block() {
+    SHPEC_CURRENT_BLOCK=$(shpec_blocks | tail -n +1)
+    SHPEC_LEVEL=$((SHPEC_LEVEL - 1))
+}
+
+shpec_var() {
+    if [ "$#" -ge "2" ]; then
+        shpec_set_var "$1" "$2"
+    else
+        shpec_get_var "$1"
+    fi
+}
+
+shpec_unset_var() {
+    eval "unset SHPEC_${1}_${SHPEC_LEVEL}"
+}
+
+shpec_set_var() {
+    eval "SHPEC_${1}_${SHPEC_LEVEL}=$(shpec_quote "$2")"
+}
+
+shpec_get_var_1() {
+    eval "printf \"%s\\n\" \"\$SHPEC_${SHPEC_VAR_NAME}_${SHPEC_LEVEL}\""
+}
+
+shpec_get_var() {
+    SHPEC_VAR_NAME="$1"
+    (
+        RESULT="$(shpec_get_var_1)"
+        while [ -z "$RESULT" ]; do
+            if [ "$SHPEC_LEVEL" -le 0 ]; then break; fi
+            SHPEC_LEVEL=$((SHPEC_LEVEL - 1))
+            RESULT="$(shpec_get_var_1)"
+        done
+        [ -n "$RESULT" ] && printf "%s" "$RESULT"
+    )
+}
+
+shpec_prefix_with() {
+    sed "s/^/$1/"
+}
+
+shpec_indent_prefix() {
+    for i in $(seq $((SHPEC_LEVEL - 1))); do
+        printf "%s" @
+    done | sed "s/@/$SHPEC_INDENT_STRING/g"
+}
+
+shpec_indent() {
+    shpec_prefix_with "$(shpec_indent_prefix)"
+}
+
+describe() {
+    shpec_push_block describe
+    shpec_var DESCRIPTION "$1"
+    printf "%s\n" "$1" | shpec_indent
+}
+
+describe_end() {
+    shpec_unset_var DESCRIPTION
+}
+
+it() {
+    shpec_push_block it
+    shpec_var IT_LABEL "$1"
+}
+
+it_end() {
+    shpec_unset_var IT_LABEL
+}
+
+info() {
+    [ -z "$(shpec_var IT_LABEL)" ] && return 0
+    case "$1" in
+        failure)
+            color red "$(shpec_var IT_LABEL)"
+            (
+                FAILURE_MESSAGE="$(shpec_var FAILURE_MESSAGE)"
+                [ -n "$FAILURE_MESSAGE" ] && printf "\n%s" "$FAILURE_MESSAGE"
+            )
+            ;;
+        success)
+            color green "$(shpec_var IT_LABEL)"
+            ;;
+    esac | shpec_indent
+    printf "\n"
+}
+
+expect() {
+    if ! expr "$1" $3 "$4" >/dev/null ; then
+        SHPEC_TMP_BUFFER=$({
+            printf "Comparison failed (using %s):\n" "$3"
+            printf "Expected:\n"
+            printf " %s\n" "$4"
+            printf "Got:\n"
+            printf " %s\n" "$1"
+        } | shpec_indent)
+        shpec_var FAILURE_MESSAGE "$SHPEC_TMP_BUFFER"
+
+        return 1
+    else
+        return 0
+    fi
+}
+
+end() {
+    RETVAL=$?
+    if [ "$RETVAL" = "0" ]; then
+        info success
+    else
+        info failure
+    fi
+
+    eval "$(shpec_current_block)_end"
+
+    shpec_pop_block
+
+    return $RETVAL
+}
+
+var() {
+    shpec_var "$@"
+}
+
+shpec_main() {
+    if [ "$1" = "-f" ]; then
+        . "$2"
+        exit
+    fi
+
+    for shpecfile in "$1"/*-shpec.sh; do
+        . "$shpecfile" || {
+            SHPEC_EXIT_CODE=1
+            printf "FAIL %s\n" "$shpecfile"
+        } >&2
+    done
+
+    exit $SHPEC_EXIT_CODE
+}
+
+[ "$0" = "sh" ] || shpec_main "$@"
