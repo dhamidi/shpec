@@ -34,6 +34,7 @@ shpec_run() {
 }
 
 shpec_run_dir() {
+    SHPEC_LINE=''
     for shpecfile in "${1:-t}"/*-shpec.sh; do
         if [ -e "$shpecfile" ]; then
             shpec_run_file "$shpecfile"
