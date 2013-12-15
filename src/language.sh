@@ -35,7 +35,10 @@ info() {
             color red "$(shpec_var INFO_LABEL)"
             (
                 FAILURE_MESSAGE="$(shpec_var FAILURE_MESSAGE)"
-                [ -n "$FAILURE_MESSAGE" ] && printf "\n%s" "$(shpec_indent $FAILURE_MESSAGE)"
+                [ -n "$FAILURE_MESSAGE" ] && {
+                    printf "\n%s" "$FAILURE_MESSAGE" |
+                    shpec_prefix_with "$SHPEC_INDENT_STRING"
+                }
             )
             ;;
         success)
@@ -50,9 +53,15 @@ expect() {
         SHPEC_TMP_BUFFER=$({
             printf "Comparison failed (using %s):\n" "$3"
             printf "Expected:\n"
-            printf " %s\n" "$4"
+            printf " %s\n" $({
+                    printf "%s\n" "$4" |
+                    shpec_prefix_with " "
+                })
             printf "Got:\n"
-            printf " %s\n" "$1"
+            printf " %s\n" $({
+                    printf "%s\n" "$1" |
+                    shpec_prefix_with " "
+                })
         })
         shpec_var FAILURE_MESSAGE "$SHPEC_TMP_BUFFER"
 
@@ -71,5 +80,12 @@ end() {
 }
 
 var() {
-    shpec_var "$@"
+    case "$1" in
+        -u|--undef)
+            shpec_unset_var "$2"
+            ;;
+        *)
+            shpec_var "$@"
+            ;;
+    esac
 }
