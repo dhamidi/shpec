@@ -5,7 +5,7 @@ describe 'text'
       expect "$(echo a | shpec_prefix_with :)" to = ":a"
     end
 
-    (it 'works with multiple lines'  :focus
+    (it 'works with multiple lines'
       EXPECTED=$(printf ":a\n:b\n")
       expect "$(printf "a\nb\n" | shpec_prefix_with :)" \
           to = "$EXPECTED"
@@ -30,7 +30,7 @@ describe 'text'
       expect "$PREFIX" to = "."
     end)
 
-    (it 'indents all lines' :focus
+    (it 'indents all lines'
       EXPECTED=$(printf ".a\n.\n.b")
       expect "$(SHPEC_LEVEL=2; SHPEC_INDENT_STRING=.; printf "a\n\nb\n" | shpec_indent)" \
           to = "$EXPECTED"
