@@ -1,9 +1,29 @@
 #!/bin/sh
-. ${0%/*}/../share/shpec/shpec.sh
+SHPEC_SHARED=${0%/*}/../share/shpec
+SHPEC_BALANCED=${SHPEC_SHARED}/balanced.awk
+. ${SHPEC_SHARED}/shpec.sh
+
+shpec_run_stdin() {
+    # is this a useless use of cat?
+    SHPEC_EVAL=eval shpec_run "$(cat)"
+}
+
+shpec_run_file() {
+    (
+        SHPEC_FILE="${1}"
+        if [ "${SHPEC_LINE:-$SHPEC_FILE}" != "$SHPEC_FILE" ]; then
+            sed -n "$SHPEC_LINE,\$p" "$SHPEC_FILE" |
+            awk -f $SHPEC_BALANCED |
+            shpec_run_stdin
+        else
+            SHPEC_EVAL=. shpec_run "$SHPEC_FILE"
+        fi
+    )
+}
 
 shpec_run() {
     (
-        . "$1"
+        ${SHPEC_EVAL:-.} "$1"
         SHPEC_EXIT_CODE=$?
         if [ "$SHPEC_EXIT_CODE" != 0 ]; then
             printf "FAIL %s\n" "$1" >&2
@@ -13,21 +33,28 @@ shpec_run() {
     )
 }
 
-shpec_main() {
-    case $1 in
-        -f)
-            shpec_run $1
-            return $?
-            ;;
-    esac
-
+shpec_run_dir() {
     for shpecfile in "${1:-t}"/*-shpec.sh; do
         if [ -e "$shpecfile" ]; then
-            shpec_run "$shpecfile"
+            shpec_run_file "$shpecfile"
         fi
     done
+}
 
-    return $SHPEC_EXIT_CODE
+shpec_main() {
+    SHPEC_FILE="${1:-t}"
+    SHPEC_FILE="${SHPEC_FILE%:*}"
+    SHPEC_LINE="${1#*:}"
+
+    export SHPEC_FILE SHPEC_LINE
+
+    if [ -d "$SHPEC_FILE" ]; then
+        shpec_run_dir "$SHPEC_FILE"
+    elif [ -f "$SHPEC_FILE" ]; then
+        shpec_run_file "$SHPEC_FILE"
+    elif [ "$SHPEC_FILE" = "-" ]; then
+        shpec_run_stdin
+    fi
 }
 
 shpec_main "$@"
