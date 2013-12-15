@@ -1,11 +1,31 @@
 describe() {
-    shpec_push_block describe
+    shpec_begin_block describe
     printf "%s\n" "$1" | shpec_indent
 }
 
+describe_enter() {
+    :
+}
+
+describe_leave() {
+    :
+}
+
 it() {
-    shpec_push_block it
+    shpec_begin_block it
     shpec_var INFO_LABEL "$1"
+}
+
+it_enter() {
+    :
+}
+
+it_leave() {
+    if [ "$BLOCK_RETVAL" = "0" ]; then
+        info success
+    else
+        info failure
+    fi
 }
 
 info() {
@@ -43,16 +63,11 @@ expect() {
 }
 
 end() {
-    RETVAL=$?
-    if [ "$RETVAL" = "0" ]; then
-        info success
-    else
-        info failure
-    fi
+    BLOCK_RETVAL=$?
 
     shpec_end_block
 
-    return $RETVAL
+    return $BLOCK_RETVAL
 }
 
 var() {

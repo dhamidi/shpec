@@ -12,7 +12,7 @@ shpec_push_block() {
 }
 
 shpec_pop_block() {
-    SHPEC_CURRENT_BLOCK=$(shpec_blocks | tail -n +1)
+    SHPEC_CURRENT_BLOCK=$(shpec_blocks | tail -n +2)
     SHPEC_LEVEL=$((SHPEC_LEVEL - 1))
 }
 

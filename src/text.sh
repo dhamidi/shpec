@@ -8,11 +8,12 @@ shpec_prefix_with() {
 }
 
 shpec_indent_prefix() {
-    for i in $(seq $((SHPEC_LEVEL - 1))); do
-        printf "%s" @
-    done | sed "s/@/$SHPEC_INDENT_STRING/g"
+    for i in $(seq $(($1 - 1))); do
+        printf "%s" "$SHPEC_INDENT_STRING"
+    done
+    echo
 }
 
 shpec_indent() {
-    shpec_prefix_with "$(shpec_indent_prefix)"
+    shpec_prefix_with "$(shpec_indent_prefix $SHPEC_LEVEL)"
 }
