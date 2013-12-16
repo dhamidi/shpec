@@ -52,7 +52,7 @@ install =shpec= somewhere else, set =PREFIX=.
 
 * Author
 
-Dario Hamidi <dario.hamidi@gmail.com>, 2013, [[https://github.com/dhamidi/shtuc][Github]]
+Dario Hamidi <dario.hamidi@gmail.com>, 2013, [[https://github.com/dhamidi/shpec][Github]]
 
 * License
 
